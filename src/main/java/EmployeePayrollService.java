@@ -43,6 +43,13 @@ public class EmployeePayrollService {
         return 0;
     }
 
+    public void printData(IOService ioService){
+        if(ioService.equals(IOService.CONSOLE_IO))
+            writeEmployeeData(IOService.CONSOLE_IO);
+        else if(ioService.equals(IOService.FILE_IO))
+            EmployeePayrollFileIOService.printData();
+    }
+
     public static void main(String[] args) {
         EmployeePayrollService employeePayrollService = new EmployeePayrollService();
         Scanner sc = new Scanner(System.in);
