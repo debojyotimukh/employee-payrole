@@ -25,15 +25,13 @@ public class NIOFileAPITest {
         Assert.assertTrue(Files.notExists(playPath));
 
         //create file
-        IntStream.range(1, 10).forEach(counter -> {
-            Path tempFile = Paths.get(playPath + "/temp" + counter);
+        IntStream.range(1, 10).mapToObj(counter -> Paths.get(playPath + "/temp" + counter)).forEach(tempFile -> {
             Assert.assertTrue(Files.notExists(tempFile));
-
             File myFile = new File(tempFile.toString());
             try {
                 FileUtils.touch(myFile);
             } catch (IOException e) {
-                e.printStackTrace();
+                //duck exception
             }
             Assert.assertTrue(Files.exists(tempFile));
         });
@@ -43,5 +41,12 @@ public class NIOFileAPITest {
         Files.newDirectoryStream(playPath).forEach(System.out::println);
         Files.newDirectoryStream(playPath, path -> path.toFile().isFile() && path.toString().startsWith("temp")).forEach(System.out::println);
 
+    }
+
+    @Test
+    public void watchedDirectoryListActivities() throws IOException {
+        Path dir = Paths.get(HOME + "/" + PLAY_WITH_NIO);
+        Files.list(dir).filter(Files::isRegularFile).forEach(System.out::println);
+        new FileWatchService(dir).processEvents();
     }
 }
