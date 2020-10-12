@@ -43,18 +43,27 @@ public class EmployeePayrollService {
         return 0;
     }
 
-    public void printData(IOService ioService){
-        if(ioService.equals(IOService.CONSOLE_IO))
+    public void printData(IOService ioService) {
+        if (ioService.equals(IOService.CONSOLE_IO))
             writeEmployeeData(IOService.CONSOLE_IO);
-        else if(ioService.equals(IOService.FILE_IO))
+        else if (ioService.equals(IOService.FILE_IO))
             EmployeePayrollFileIOService.printData();
+    }
+
+    public long readEmployeePayrollData(IOService ioService) {
+        if (ioService.equals(IOService.CONSOLE_IO))
+            return employeePayrollDataList.size();
+        else if (ioService.equals(IOService.FILE_IO))
+            return EmployeePayrollFileIOService.countEntries();
+        return 0;
     }
 
     public static void main(String[] args) {
         EmployeePayrollService employeePayrollService = new EmployeePayrollService();
         Scanner sc = new Scanner(System.in);
         employeePayrollService.readEmployeeData(sc);
-        employeePayrollService.writeEmployeeData(IOService.CONSOLE_IO);
+        employeePayrollService.writeEmployeeData(IOService.FILE_IO);
+        employeePayrollService.printData(IOService.FILE_IO);
         sc.close();
     }
 }
