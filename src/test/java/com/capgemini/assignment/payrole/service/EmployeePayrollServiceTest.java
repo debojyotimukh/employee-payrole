@@ -1,7 +1,11 @@
+package com.capgemini.assignment.payrole.service;
+
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Arrays;
+
+import com.capgemini.assignment.payrole.model.EmployeePayrollData;
 
 public class EmployeePayrollServiceTest {
     @Test

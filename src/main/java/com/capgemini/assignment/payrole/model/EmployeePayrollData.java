@@ -1,3 +1,5 @@
+package com.capgemini.assignment.payrole.model;
+
 public class EmployeePayrollData {
     private int id;
     private String name;

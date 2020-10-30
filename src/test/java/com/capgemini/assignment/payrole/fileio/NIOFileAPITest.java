@@ -1,5 +1,8 @@
+package com.capgemini.assignment.payrole.fileio;
+
 import org.apache.commons.io.FileUtils;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -14,6 +17,7 @@ public class NIOFileAPITest {
     private static final String PLAY_WITH_NIO = "TempPlayground";
 
     @Test
+    @Ignore
     public void pathCheckConfirm() throws IOException {
         //check file exists
         Path homePath = Paths.get(HOME);
@@ -44,6 +48,7 @@ public class NIOFileAPITest {
     }
 
     @Test
+    @Ignore
     public void watchedDirectoryListActivities() throws IOException {
         Path dir = Paths.get(HOME + "/" + PLAY_WITH_NIO);
         Files.list(dir).filter(Files::isRegularFile).forEach(System.out::println);
