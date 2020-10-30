@@ -4,11 +4,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
+import com.capgemini.assignment.payrole.dao.EmployeePayrollDBService;
+import com.capgemini.assignment.payrole.exception.EmployeePayrollException;
 import com.capgemini.assignment.payrole.fileio.EmployeePayrollFileIOService;
 import com.capgemini.assignment.payrole.model.EmployeePayrollData;
 
 public class EmployeePayrollService {
-    public enum IOService {CONSOLE_IO, FILE_IO}
+    public enum IOService {
+        CONSOLE_IO, FILE_IO, DB_IO
+    };
 
     List<EmployeePayrollData> employeePayrollDataList = new ArrayList<>();
 
@@ -55,12 +59,17 @@ public class EmployeePayrollService {
             EmployeePayrollFileIOService.printData();
     }
 
-    public long readEmployeePayrollData(IOService ioService) {
+    public List<EmployeePayrollData> readEmployeePayrollData(IOService ioService) {
         if (ioService.equals(IOService.CONSOLE_IO))
-            return employeePayrollDataList.size();
-        else if (ioService.equals(IOService.FILE_IO))
-            return EmployeePayrollFileIOService.countEntries();
-        return 0;
+            return employeePayrollDataList;
+        else if (ioService.equals(IOService.DB_IO)) {
+            try {
+                this.employeePayrollDataList = new EmployeePayrollDBService().readData();
+            } catch (EmployeePayrollException e) {
+                e.printStackTrace();
+            }
+        }
+        return this.employeePayrollDataList;
     }
 
     public static void main(String[] args) {
