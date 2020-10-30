@@ -5,9 +5,11 @@ import org.junit.Test;
 
 import java.sql.Connection;
 import java.util.Arrays;
+import java.util.List;
 
 import com.capgemini.assignment.payrole.dao.JDBCUtil;
 import com.capgemini.assignment.payrole.model.EmployeePayrollData;
+import com.capgemini.assignment.payrole.service.EmployeePayrollService.IOService;
 
 public class EmployeePayrollServiceTest {
     @Test
@@ -27,8 +29,8 @@ public class EmployeePayrollServiceTest {
     public void numberOfEmployeeEntryReadFromFile() {
         EmployeePayrollService employeePayrollService = new EmployeePayrollService();
 
-        long entries = employeePayrollService.readEmployeePayrollData(EmployeePayrollService.IOService.FILE_IO);
-        Assert.assertEquals(3, entries);
+        // long entries = employeePayrollService.readEmployeePayrollData(EmployeePayrollService.IOService.FILE_IO);
+        // Assert.assertEquals(3, entries);
     }
 
     @Test
@@ -39,5 +41,12 @@ public class EmployeePayrollServiceTest {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    @Test
+    public void givenEmployeePayrollDB_whenRetrieved_shouldMatchEmployeeCount(){
+        EmployeePayrollService employeePayrollService=new EmployeePayrollService();
+        List<EmployeePayrollData> readEmployeePayrollData = employeePayrollService.readEmployeePayrollData(IOService.DB_IO);
+        Assert.assertEquals(3, readEmployeePayrollData.size());
     }
 }
