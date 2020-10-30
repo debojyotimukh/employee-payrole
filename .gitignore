@@ -1,6 +1,9 @@
-.gradle/
-.idea/
+.*
+!/.gitignore
+*.txt
+bin/
+*.class
+build/
 gradle/
-gradlew.bat
-gradlew
+gradle*
 settings.gradle
