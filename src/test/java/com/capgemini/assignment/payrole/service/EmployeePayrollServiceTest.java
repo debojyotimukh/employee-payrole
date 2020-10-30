@@ -3,8 +3,10 @@ package com.capgemini.assignment.payrole.service;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.sql.Connection;
 import java.util.Arrays;
 
+import com.capgemini.assignment.payrole.dao.JDBCUtil;
 import com.capgemini.assignment.payrole.model.EmployeePayrollData;
 
 public class EmployeePayrollServiceTest {
@@ -27,5 +29,15 @@ public class EmployeePayrollServiceTest {
 
         long entries = employeePayrollService.readEmployeePayrollData(EmployeePayrollService.IOService.FILE_IO);
         Assert.assertEquals(3, entries);
+    }
+
+    @Test
+    public void givenDBProperties_when_triedToConnect_shouldConnectSuccessfully(){
+        try (Connection conn = JDBCUtil.getConnection()) {
+            Assert.assertNotNull(conn);
+            Assert.assertEquals("payroll_service", conn.getCatalog());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
