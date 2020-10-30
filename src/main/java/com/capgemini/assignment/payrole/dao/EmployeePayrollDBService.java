@@ -15,9 +15,10 @@ public class EmployeePayrollDBService {
     public List<EmployeePayrollData> readData() throws EmployeePayrollException {
         String sql = "SELECT * FROM employee_payroll";
         List<EmployeePayrollData> employeePayrollDatas = new ArrayList<>();
-        try (Connection connection = JDBCUtil.getConnection()) {
+        try (Connection connection = JDBCUtil.getConnection();
             Statement statement = connection.createStatement();
-            ResultSet resultSet = statement.executeQuery(sql);
+            ResultSet resultSet = statement.executeQuery(sql);) {
+                
             while (resultSet.next()) {
                 int id = resultSet.getInt("id");
                 String name = resultSet.getString("emp_name");
