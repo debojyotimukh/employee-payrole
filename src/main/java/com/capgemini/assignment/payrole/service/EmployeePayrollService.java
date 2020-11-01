@@ -1,5 +1,6 @@
 package com.capgemini.assignment.payrole.service;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -117,6 +118,18 @@ public class EmployeePayrollService {
         if (employeePayrollData != null)
             employeePayrollData.setSalary(salary);
 
+    }
+
+    public List<EmployeePayrollData> readEmployeeDataForDateRange(IOService ioType, LocalDate startDate,
+            LocalDate endDate) throws EmployeePayrollException {
+        if (ioType.equals(IOService.DB_IO)) {
+            try {
+                return employeePayrollDBService.readEmployeeDataForDateRange(startDate, endDate);
+            } catch (DBException e) {
+                throw new EmployeePayrollException("Failed to read: " + e.getMessage());
+            }
+        }
+        return null;
     }
 
     /**

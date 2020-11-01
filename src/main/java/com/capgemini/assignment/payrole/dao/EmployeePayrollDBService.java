@@ -3,6 +3,7 @@ package com.capgemini.assignment.payrole.dao;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -20,8 +21,11 @@ import com.capgemini.assignment.payrole.model.EmployeePayrollData;
  * Singeleton object for Employee Database operations
  */
 public class EmployeePayrollDBService {
-    private PreparedStatement prepareStatement=null;
     private static EmployeePayrollDBService employeePayrollDBService;
+    private PreparedStatement selectStatementCache = null;
+    private PreparedStatement updateStatementCache = null;
+    private PreparedStatement selectAllStatementCache;
+    private PreparedStatement selectDateRangeStatementCache;
 
     private EmployeePayrollDBService() {
     }
@@ -85,6 +89,23 @@ public class EmployeePayrollDBService {
         return employeePayrollDatas;
     }
 
+    private void prepareStatementForEmployeeData() throws DBException {
+        String sqlUpdateSalary = "update employee_payroll set salary = ? where emp_name = ?";
+        String sqlSelectByName = "select * from employee_payroll where emp_name = ?";
+        String sqlSelectAll = "SELECT * FROM employee_payroll";
+        String sqlSelectDateRange = "SELECT * FROM employee_payroll WHERE start_dt BETWEEN ? AND ?";
+        try {
+            Connection connection = EmployeePayrollDBService.getConnection();
+            updateStatementCache = connection.prepareStatement(sqlUpdateSalary);
+            selectStatementCache = connection.prepareStatement(sqlSelectByName);
+            selectAllStatementCache = connection.prepareStatement(sqlSelectAll);
+            selectDateRangeStatementCache = connection.prepareStatement(sqlSelectDateRange);
+
+        } catch (SQLException e) {
+            throw new DBException(e.getMessage());
+        }
+    }
+
     /**
      * Read entire employee payroll data from database
      * 
@@ -93,15 +114,14 @@ public class EmployeePayrollDBService {
      * 
      */
     public List<EmployeePayrollData> readData() throws DBException {
-        String sql = "SELECT * FROM employee_payroll";
-        List<EmployeePayrollData> employeePayrollDatas = new ArrayList<>();
-        try (Connection connection = EmployeePayrollDBService.getConnection();
-                Statement statement = connection.createStatement();
-                ResultSet resultSet = statement.executeQuery(sql)) {
-
-            employeePayrollDatas = getEmployeePayrollData(resultSet);
-        } catch (Exception e) {
-            throw new DBException(e.getMessage());
+        List<EmployeePayrollData> employeePayrollDatas = null;
+        if (selectAllStatementCache == null)
+            prepareStatementForEmployeeData();
+        try {
+            ResultSet resultSet = selectAllStatementCache.executeQuery();
+            employeePayrollDatas = this.getEmployeePayrollData(resultSet);
+        } catch (SQLException e) {
+            throw new DBException("Failed to read: " + e.getMessage());
         }
         return employeePayrollDatas;
     }
@@ -116,21 +136,20 @@ public class EmployeePayrollDBService {
      */
     public List<EmployeePayrollData> getEmployeePayrollData(String name) throws DBException {
         List<EmployeePayrollData> employeePayrollDatas = null;
-
-        String sql = String.format("select * from employee_payroll where emp_name = '%s'", name);
-        try (Connection connection = EmployeePayrollDBService.getConnection()) {
-            System.out.println("Connection is successfull!!! " + connection);
-            Statement statement = connection.createStatement();
-            ResultSet resultSet = statement.executeQuery(sql);
-
+        if (selectStatementCache == null)
+            prepareStatementForEmployeeData();
+        try {
+            selectStatementCache.setString(1, name);
+            ResultSet resultSet = selectStatementCache.executeQuery();
             employeePayrollDatas = this.getEmployeePayrollData(resultSet);
         } catch (SQLException e) {
-            throw new DBException(e.getMessage());
+            throw new DBException("Failed to read: " + e.getMessage());
         }
 
         return employeePayrollDatas;
     }
 
+    @SuppressWarnings("unused")
     private int updateEmployeeDataUsingStatement(String name, double salary) throws DBException {
         String sql = String.format("update employee_payroll set salary = %.2f where emp_name = '%s'", salary, name);
         try (Connection connection = EmployeePayrollDBService.getConnection()) {
@@ -142,32 +161,34 @@ public class EmployeePayrollDBService {
     }
 
     private int updateEmployeeDataUsingPreparedStatement(String name, double salary) throws DBException {
-        if(prepareStatement==null)
+        if (updateStatementCache == null)
             prepareStatementForEmployeeData();
         try {
-            prepareStatement.setDouble(1, salary);
-            prepareStatement.setString(2, name);
-            return prepareStatement.executeUpdate();
+            updateStatementCache.setDouble(1, salary);
+            updateStatementCache.setString(2, name);
+            return updateStatementCache.executeUpdate();
         } catch (SQLException e) {
-            throw new DBException("Failed to update: "+e.getMessage());
+            throw new DBException("Failed to update: " + e.getMessage());
         }
-	}
+    }
 
     public int updateEmployeeData(String name, double salary) throws DBException {
         return updateEmployeeDataUsingPreparedStatement(name, salary);
 
     }
 
-    private void prepareStatementForEmployeeData() throws DBException {
-        String sql = "update employee_payroll set salary = ? where emp_name = ?";
-        try  {
-            Connection connection = EmployeePayrollDBService.getConnection();
-            prepareStatement = connection.prepareStatement(sql);
-
+    public List<EmployeePayrollData> readEmployeeDataForDateRange(LocalDate startDate, LocalDate endDate)
+            throws DBException {
+        if (updateStatementCache == null)
+            prepareStatementForEmployeeData();
+        try {
+            selectDateRangeStatementCache.setDate(1, Date.valueOf(startDate));
+            selectDateRangeStatementCache.setDate(2, Date.valueOf(endDate));
+            ResultSet resultSet = selectDateRangeStatementCache.executeQuery();
+            return this.getEmployeePayrollData(resultSet);
         } catch (SQLException e) {
-            throw new DBException(e.getMessage());
+            throw new DBException("Failed to read: " + e.getMessage());
         }
-
     }
 
 }
