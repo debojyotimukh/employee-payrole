@@ -4,6 +4,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.sql.Connection;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 
@@ -60,5 +61,16 @@ public class EmployeePayrollServiceTest {
         boolean result = employeePayrollService.checkEmplyoeePayrollSyncWithDB("Terisa");
         Assert.assertTrue(result);
 
+    }
+
+    @Test
+    public void givenDateRange_whenRetrieved_shouldMatchEmployeeCount() throws EmployeePayrollException {
+        EmployeePayrollService employeePayrollService = new EmployeePayrollService();
+
+        LocalDate startDate = LocalDate.of(2019, 01, 01);
+        LocalDate endDate = LocalDate.now();
+        List<EmployeePayrollData> employeePayrollData = employeePayrollService
+                .readEmployeeDataForDateRange(IOService.DB_IO, startDate, endDate);
+        Assert.assertEquals(2, employeePayrollData.size());
     }
 }
