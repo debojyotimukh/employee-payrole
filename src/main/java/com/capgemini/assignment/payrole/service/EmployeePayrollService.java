@@ -143,6 +143,16 @@ public class EmployeePayrollService {
         return null;
     }
 
+    public void addEmployeeToPayroll(EmployeePayrollData employeePayrollData) throws EmployeePayrollException {
+		try {
+            if(employeePayrollDBService.addEmployeePayroll(employeePayrollData))
+                this.employeePayrollDataList.add(employeePayrollData);
+			
+		} catch (DBException e) {
+			throw new EmployeePayrollException("Failed to add into DB: " + e.getMessage());
+		}
+	}
+
     /**
      * Helper method to read employee data from console
      * 

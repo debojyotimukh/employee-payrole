@@ -29,6 +29,7 @@ public class EmployeePayrollDBService {
     private PreparedStatement updateStatementCache = null;
     private PreparedStatement selectAllStatementCache;
     private PreparedStatement selectDateRangeStatementCache;
+    private PreparedStatement addStatementCache;
 
     private EmployeePayrollDBService() {
     }
@@ -97,12 +98,15 @@ public class EmployeePayrollDBService {
         String sqlSelectByName = "select * from employee_payroll where emp_name = ?";
         String sqlSelectAll = "SELECT * FROM employee_payroll";
         String sqlSelectDateRange = "SELECT * FROM employee_payroll WHERE start_dt BETWEEN ? AND ?";
+        String sqlAddEmployee = "insert into employee_payroll (emp_name, gender, salary, start_dt) values"
+                + "(?, ?,?,?)";
         try {
             connection = EmployeePayrollDBService.getConnection();
             updateStatementCache = connection.prepareStatement(sqlUpdateSalary);
             selectStatementCache = connection.prepareStatement(sqlSelectByName);
             selectAllStatementCache = connection.prepareStatement(sqlSelectAll);
             selectDateRangeStatementCache = connection.prepareStatement(sqlSelectDateRange);
+            addStatementCache = connection.prepareStatement(sqlAddEmployee);
 
         } catch (SQLException e) {
             throw new DBException(e.getMessage());
@@ -197,7 +201,7 @@ public class EmployeePayrollDBService {
     public Map<String, Double> readAverageSalaryByGender() throws DBException {
         if (connection == null)
             prepareStatementForEmployeeData();
-            
+
         String sql = "select gender, avg(salary) as average_salary from employee_payroll group by gender";
         Map<String, Double> genderToAverageSalaryMap = new HashMap<>();
         try (Statement statement = connection.createStatement()) {
@@ -211,5 +215,20 @@ public class EmployeePayrollDBService {
             throw new DBException("Failed to read: " + e.getMessage());
         }
         return genderToAverageSalaryMap;
+    }
+
+    public boolean addEmployeePayroll(EmployeePayrollData employeePayrollData) throws DBException {
+        if (addStatementCache == null)
+            prepareStatementForEmployeeData();
+        try {
+            // (emp_name, gender, salary, start_dt)
+            addStatementCache.setString(1, employeePayrollData.getName());
+            addStatementCache.setString(2, String.valueOf(employeePayrollData.getGender()));
+            addStatementCache.setDouble(3, employeePayrollData.getSalary());
+            addStatementCache.setDate(4, Date.valueOf(employeePayrollData.getStartDate()));
+            return addStatementCache.execute();
+        } catch (SQLException e) {
+            throw new DBException("Failed to add into payroll DB: " + e.getMessage());
+        }
     }
 }
