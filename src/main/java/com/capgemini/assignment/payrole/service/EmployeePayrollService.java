@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 
 import com.capgemini.assignment.payrole.dao.EmployeePayrollDBService;
 import com.capgemini.assignment.payrole.exception.DBException;
@@ -144,14 +145,30 @@ public class EmployeePayrollService {
     }
 
     public void addEmployeeToPayroll(EmployeePayrollData employeePayrollData) throws EmployeePayrollException {
-		try {
-            if(employeePayrollDBService.addEmployeePayroll(employeePayrollData))
+        try {
+            if (employeePayrollDBService.addEmployeePayroll(employeePayrollData))
                 this.employeePayrollDataList.add(employeePayrollData);
-			
-		} catch (DBException e) {
-			throw new EmployeePayrollException("Failed to add into DB: " + e.getMessage());
-		}
-	}
+
+        } catch (DBException e) {
+            throw new EmployeePayrollException("Failed to add into DB: " + e.getMessage());
+        }
+    }
+
+    public void removeFromPayroll(String name) throws EmployeePayrollException {
+        int result = 0;
+        try {
+            result = employeePayrollDBService.setInactive("name");
+            if (result == 0)
+                return;
+        } catch (DBException e) {
+            throw new EmployeePayrollException("Failed to remove: " + e.getMessage());
+        }
+
+        EmployeePayrollData employeePayrollData = this.getEmployeePayrollData(name);
+        if (employeePayrollData != null)
+            employeePayrollDataList.remove(employeePayrollData);
+
+    }
 
     /**
      * Helper method to read employee data from console
