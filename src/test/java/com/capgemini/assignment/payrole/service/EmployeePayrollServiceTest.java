@@ -7,6 +7,7 @@ import java.sql.Connection;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import com.capgemini.assignment.payrole.dao.EmployeePayrollDBService;
 import com.capgemini.assignment.payrole.exception.EmployeePayrollException;
@@ -72,5 +73,15 @@ public class EmployeePayrollServiceTest {
         List<EmployeePayrollData> employeePayrollData = employeePayrollService
                 .readEmployeeDataForDateRange(IOService.DB_IO, startDate, endDate);
         Assert.assertEquals(2, employeePayrollData.size());
+    }
+
+    @Test
+    public void givenPayrollData_whenAverageSalaryReturnedByGender_shouldReturnExpectedValue()
+            throws EmployeePayrollException {
+        EmployeePayrollService employeePayrollService = new EmployeePayrollService();
+        Map<String, Double> averageSalaryByGender = employeePayrollService.readAverageSalaryByGender(IOService.DB_IO);
+        Assert.assertEquals(averageSalaryByGender.get("M"), 200000.0,0.0);
+        Assert.assertEquals(averageSalaryByGender.get("F"), 300000.0,0.0);
+
     }
 }
