@@ -27,9 +27,10 @@ public class EmployeePayrollDBService {
     private Connection connection = null;
     private PreparedStatement selectStatementCache = null;
     private PreparedStatement updateStatementCache = null;
-    private PreparedStatement selectAllStatementCache;
-    private PreparedStatement selectDateRangeStatementCache;
-    private PreparedStatement addStatementCache;
+    private PreparedStatement selectAllStatementCache = null;
+    private PreparedStatement selectDateRangeStatementCache = null;
+    private PreparedStatement addStatementCache = null;
+    private PreparedStatement removeStatementCache = null;
 
     private EmployeePayrollDBService() {
     }
@@ -94,12 +95,13 @@ public class EmployeePayrollDBService {
     }
 
     private void prepareStatementForEmployeeData() throws DBException {
-        String sqlUpdateSalary = "update employee_payroll set salary = ? where emp_name = ?";
-        String sqlSelectByName = "select * from employee_payroll where emp_name = ?";
-        String sqlSelectAll = "SELECT * FROM employee_payroll";
-        String sqlSelectDateRange = "SELECT * FROM employee_payroll WHERE start_dt BETWEEN ? AND ?";
+        String sqlUpdateSalary = "update employee_payroll set salary = ? where emp_name = ? and is_active is true";
+        String sqlSelectByName = "select * from employee_payroll where emp_name = ? and is_active is true";
+        String sqlSelectAll = "SELECT * FROM employee_payroll where is_active=1";
+        String sqlSelectDateRange = "SELECT * FROM employee_payroll WHERE is_active is true AND start_dt BETWEEN ? AND ?";
         String sqlAddEmployee = "insert into employee_payroll (emp_name, gender, salary, start_dt) values"
                 + "(?, ?,?,?)";
+        String sqlRemoveEmployee = "UPDATE employee_payroll SET is_active=false WHERE is_active is true AND emp_name= ?";
         try {
             connection = EmployeePayrollDBService.getConnection();
             updateStatementCache = connection.prepareStatement(sqlUpdateSalary);
@@ -107,6 +109,7 @@ public class EmployeePayrollDBService {
             selectAllStatementCache = connection.prepareStatement(sqlSelectAll);
             selectDateRangeStatementCache = connection.prepareStatement(sqlSelectDateRange);
             addStatementCache = connection.prepareStatement(sqlAddEmployee);
+            removeStatementCache = connection.prepareStatement(sqlRemoveEmployee);
 
         } catch (SQLException e) {
             throw new DBException(e.getMessage());
@@ -229,6 +232,18 @@ public class EmployeePayrollDBService {
             return addStatementCache.execute();
         } catch (SQLException e) {
             throw new DBException("Failed to add into payroll DB: " + e.getMessage());
+        }
+    }
+
+    public int setInactive(String name) throws DBException {
+        if (removeStatementCache == null)
+            prepareStatementForEmployeeData();
+
+        try {
+            removeStatementCache.setString(1, name);
+            return removeStatementCache.executeUpdate();
+        } catch (SQLException e) {
+            throw new DBException("Failed to read: " + e.getMessage());
         }
     }
 }
