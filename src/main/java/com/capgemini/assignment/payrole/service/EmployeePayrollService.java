@@ -3,6 +3,7 @@ package com.capgemini.assignment.payrole.service;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 
 import com.capgemini.assignment.payrole.dao.EmployeePayrollDBService;
@@ -129,6 +130,16 @@ public class EmployeePayrollService {
                 throw new EmployeePayrollException("Failed to read: " + e.getMessage());
             }
         }
+        return null;
+    }
+
+    public Map<String, Double> readAverageSalaryByGender(IOService ioService) throws EmployeePayrollException {
+        if (ioService.equals(IOService.DB_IO))
+            try {
+                return employeePayrollDBService.readAverageSalaryByGender();
+            } catch (DBException e) {
+                throw new EmployeePayrollException("Failed to read: " + e.getMessage());
+            }
         return null;
     }
 

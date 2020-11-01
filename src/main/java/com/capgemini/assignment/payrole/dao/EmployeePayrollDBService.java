@@ -11,7 +11,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import com.capgemini.assignment.payrole.exception.DBException;
@@ -22,6 +24,7 @@ import com.capgemini.assignment.payrole.model.EmployeePayrollData;
  */
 public class EmployeePayrollDBService {
     private static EmployeePayrollDBService employeePayrollDBService;
+    private Connection connection = null;
     private PreparedStatement selectStatementCache = null;
     private PreparedStatement updateStatementCache = null;
     private PreparedStatement selectAllStatementCache;
@@ -95,7 +98,7 @@ public class EmployeePayrollDBService {
         String sqlSelectAll = "SELECT * FROM employee_payroll";
         String sqlSelectDateRange = "SELECT * FROM employee_payroll WHERE start_dt BETWEEN ? AND ?";
         try {
-            Connection connection = EmployeePayrollDBService.getConnection();
+            connection = EmployeePayrollDBService.getConnection();
             updateStatementCache = connection.prepareStatement(sqlUpdateSalary);
             selectStatementCache = connection.prepareStatement(sqlSelectByName);
             selectAllStatementCache = connection.prepareStatement(sqlSelectAll);
@@ -179,7 +182,7 @@ public class EmployeePayrollDBService {
 
     public List<EmployeePayrollData> readEmployeeDataForDateRange(LocalDate startDate, LocalDate endDate)
             throws DBException {
-        if (updateStatementCache == null)
+        if (selectDateRangeStatementCache == null)
             prepareStatementForEmployeeData();
         try {
             selectDateRangeStatementCache.setDate(1, Date.valueOf(startDate));
@@ -191,4 +194,22 @@ public class EmployeePayrollDBService {
         }
     }
 
+    public Map<String, Double> readAverageSalaryByGender() throws DBException {
+        if (connection == null)
+            prepareStatementForEmployeeData();
+            
+        String sql = "select gender, avg(salary) as average_salary from employee_payroll group by gender";
+        Map<String, Double> genderToAverageSalaryMap = new HashMap<>();
+        try (Statement statement = connection.createStatement()) {
+
+            ResultSet resultSet = statement.executeQuery(sql);
+            while (resultSet.next()) {
+                genderToAverageSalaryMap.put(resultSet.getString("gender"), resultSet.getDouble("average_salary"));
+            }
+
+        } catch (SQLException e) {
+            throw new DBException("Failed to read: " + e.getMessage());
+        }
+        return genderToAverageSalaryMap;
+    }
 }
