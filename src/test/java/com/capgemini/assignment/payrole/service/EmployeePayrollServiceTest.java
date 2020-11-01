@@ -1,8 +1,5 @@
 package com.capgemini.assignment.payrole.service;
 
-import org.junit.Assert;
-import org.junit.Test;
-
 import java.sql.Connection;
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -14,7 +11,18 @@ import com.capgemini.assignment.payrole.exception.EmployeePayrollException;
 import com.capgemini.assignment.payrole.model.EmployeePayrollData;
 import com.capgemini.assignment.payrole.service.EmployeePayrollService.IOService;
 
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
 public class EmployeePayrollServiceTest {
+    public EmployeePayrollService employeePayrollService;
+
+    @Before
+    public void init() {
+        employeePayrollService = new EmployeePayrollService();
+    }
+
     @Test
     public void givenPayrollData_whenWrittenToFile_shoouldMatchTheNumberOfEntriesWritten()
             throws EmployeePayrollException {
@@ -29,7 +37,6 @@ public class EmployeePayrollServiceTest {
 
     @Test
     public void givenFile_whenEntriesCounted_shouldMatchTheNumberOfExpectedEntries() throws EmployeePayrollException {
-        EmployeePayrollService employeePayrollService = new EmployeePayrollService();
         long entries = employeePayrollService.countEntries(IOService.FILE_IO);
         Assert.assertEquals(3, entries);
     }
@@ -46,7 +53,6 @@ public class EmployeePayrollServiceTest {
 
     @Test
     public void givenEmployeePayrollDB_whenRetrieved_shouldMatchEmployeeCount() throws EmployeePayrollException {
-        EmployeePayrollService employeePayrollService = new EmployeePayrollService();
         List<EmployeePayrollData> readEmployeePayrollData = employeePayrollService
                 .readEmployeePayrollData(IOService.DB_IO);
         Assert.assertEquals(3, readEmployeePayrollData.size());
@@ -54,7 +60,6 @@ public class EmployeePayrollServiceTest {
 
     @Test
     public void givenNewSalaryForEmployee_whenUpdated_shouldSyncWithDB() throws EmployeePayrollException {
-        EmployeePayrollService employeePayrollService = new EmployeePayrollService();
         List<EmployeePayrollData> readEmployeePayrollData = employeePayrollService
                 .readEmployeePayrollData(IOService.DB_IO);
         employeePayrollService.updateEmployeeSalary("Terisa", 300000.0);
@@ -66,7 +71,6 @@ public class EmployeePayrollServiceTest {
 
     @Test
     public void givenDateRange_whenRetrieved_shouldMatchEmployeeCount() throws EmployeePayrollException {
-        EmployeePayrollService employeePayrollService = new EmployeePayrollService();
 
         LocalDate startDate = LocalDate.of(2019, 01, 01);
         LocalDate endDate = LocalDate.now();
@@ -78,10 +82,22 @@ public class EmployeePayrollServiceTest {
     @Test
     public void givenPayrollData_whenAverageSalaryReturnedByGender_shouldReturnExpectedValue()
             throws EmployeePayrollException {
-        EmployeePayrollService employeePayrollService = new EmployeePayrollService();
+
         Map<String, Double> averageSalaryByGender = employeePayrollService.readAverageSalaryByGender(IOService.DB_IO);
-        Assert.assertEquals(averageSalaryByGender.get("M"), 200000.0,0.0);
-        Assert.assertEquals(averageSalaryByGender.get("F"), 300000.0,0.0);
+        Assert.assertEquals(200000.0, averageSalaryByGender.get("M"), 0.0);
+        Assert.assertEquals(300000.0, averageSalaryByGender.get("F"), 0.0);
 
     }
+
+    @Test
+    public void givenNewEmployee_whenAdded_shouldSyncWithDB() throws EmployeePayrollException {
+
+        EmployeePayrollData newEmployee = new EmployeePayrollData(0, "Monika", 500000.0, LocalDate.of(2020, 1, 24),
+                'F');
+
+        employeePayrollService.addEmployeeToPayroll(newEmployee);
+        Assert.assertEquals(4, employeePayrollService.countEntries(IOService.DB_IO));
+        Assert.assertTrue(employeePayrollService.checkEmplyoeePayrollSyncWithDB("Monika"));
+    }
+
 }
