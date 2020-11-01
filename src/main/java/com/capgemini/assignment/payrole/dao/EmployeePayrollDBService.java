@@ -20,7 +20,7 @@ import com.capgemini.assignment.payrole.model.EmployeePayrollData;
  * Singeleton object for Employee Database operations
  */
 public class EmployeePayrollDBService {
-    private PreparedStatement prepareStatement;
+    private PreparedStatement prepareStatement=null;
     private static EmployeePayrollDBService employeePayrollDBService;
 
     private EmployeePayrollDBService() {
@@ -141,14 +141,27 @@ public class EmployeePayrollDBService {
         }
     }
 
+    private int updateEmployeeDataUsingPreparedStatement(String name, double salary) throws DBException {
+        if(prepareStatement==null)
+            prepareStatementForEmployeeData();
+        try {
+            prepareStatement.setDouble(1, salary);
+            prepareStatement.setString(2, name);
+            return prepareStatement.executeUpdate();
+        } catch (SQLException e) {
+            throw new DBException("Failed to update: "+e.getMessage());
+        }
+	}
+
     public int updateEmployeeData(String name, double salary) throws DBException {
-        return updateEmployeeDataUsingStatement(name, salary);
+        return updateEmployeeDataUsingPreparedStatement(name, salary);
 
     }
 
     private void prepareStatementForEmployeeData() throws DBException {
-        try (Connection connection = EmployeePayrollDBService.getConnection()) {
-            String sql = "SELECT * FROM employee_payroll WHERE emp_name= ?";
+        String sql = "update employee_payroll set salary = ? where emp_name = ?";
+        try  {
+            Connection connection = EmployeePayrollDBService.getConnection();
             prepareStatement = connection.prepareStatement(sql);
 
         } catch (SQLException e) {
