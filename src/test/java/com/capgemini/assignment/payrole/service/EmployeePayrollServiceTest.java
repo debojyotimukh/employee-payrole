@@ -92,11 +92,19 @@ public class EmployeePayrollServiceTest {
     @Test
     public void givenNewEmployee_whenAdded_shouldSyncWithDB() throws EmployeePayrollException {
 
-        EmployeePayrollData newEmployee = new EmployeePayrollData(0, "Monika", 500000.0, LocalDate.of(2020, 1, 24),
+        EmployeePayrollData newEmployee = new EmployeePayrollData(-1, "Monika", 500000.0, LocalDate.of(2020, 1, 24),
                 'F');
 
         employeePayrollService.addEmployeeToPayroll(newEmployee);
         Assert.assertEquals(4, employeePayrollService.countEntries(IOService.DB_IO));
+        Assert.assertTrue(employeePayrollService.checkEmplyoeePayrollSyncWithDB("Monika"));
+    }
+
+    @Test
+    public void givenEmployeeName_whenDeleted_shouldNotShowInPayroll_ButRemainInactiveInDB()
+            throws EmployeePayrollException {
+        employeePayrollService.removeFromPayroll("Monika");
+        Assert.assertEquals(3, employeePayrollService.countEntries(IOService.DB_IO));
         Assert.assertTrue(employeePayrollService.checkEmplyoeePayrollSyncWithDB("Monika"));
     }
 
