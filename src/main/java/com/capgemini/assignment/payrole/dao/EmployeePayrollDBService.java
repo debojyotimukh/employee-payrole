@@ -24,6 +24,7 @@ import com.capgemini.assignment.payrole.model.EmployeePayrollData;
  */
 public class EmployeePayrollDBService {
     private static EmployeePayrollDBService employeePayrollDBService;
+    private static int instance = 0;
     private Connection connection = null;
     private PreparedStatement selectStatementCache = null;
     private PreparedStatement updateStatementCache = null;
@@ -36,7 +37,8 @@ public class EmployeePayrollDBService {
     }
 
     public static EmployeePayrollDBService getInstance() {
-        employeePayrollDBService = new EmployeePayrollDBService();
+        if (instance++ == 0)
+            employeePayrollDBService = new EmployeePayrollDBService();
         return employeePayrollDBService;
     }
 
@@ -96,11 +98,24 @@ public class EmployeePayrollDBService {
 
     private void prepareStatementForEmployeeData() throws DBException {
         String sqlUpdateSalary = "update employee set salary = ? where emp_name = ? and is_active is true";
-        String sqlSelectByName = "select * from employee where emp_name = ? and is_active is true";
-        String sqlSelectAll = "SELECT * FROM employee where is_active=1";
-        String sqlSelectDateRange = "SELECT * FROM employee WHERE is_active is true AND start_dt BETWEEN ? AND ?";
+
+        String sqlSelectByName = "select e.id,e.emp_name,e.gender,e.start_dt,e.salary,d.name,p.net_pay "
+                + "from employee e,department d,emp_dept_relation r,payroll p "
+                + "where e.id=r.emp_id and d.id=r.dept_id and e.id=p.emp_id and e.emp_name= ? and e.is_active is true";
+
+        String sqlSelectAll = "select e.id,e.emp_name,e.gender,e.start_dt,e.salary,d.name,p.net_pay "
+                + "from employee e,department d,emp_dept_relation r,payroll p "
+                + "where e.id=r.emp_id and d.id=r.dept_id and e.id=p.emp_id and e.is_active is true";
+
+        String sqlSelectDateRange = "select e.id,e.emp_name,e.gender,e.start_dt,e.salary,d.name,p.net_pay "
+                + "from department d,emp_dept_relation r,payroll p "
+                + "right outer join employee e on e.start_dt BETWEEN ? AND ? "
+                + "where e.id=r.emp_id and d.id=r.dept_id and e.id=p.emp_id and e.is_active is true;";
+
         String sqlAddEmployee = "insert into employee (emp_name, gender, salary, start_dt) values" + "(?, ?,?,?)";
+
         String sqlRemoveEmployee = "UPDATE employee SET is_active=false WHERE is_active is true AND emp_name= ?";
+
         try {
             connection = EmployeePayrollDBService.getConnection();
             updateStatementCache = connection.prepareStatement(sqlUpdateSalary);
@@ -172,13 +187,69 @@ public class EmployeePayrollDBService {
     private int updateEmployeeDataUsingPreparedStatement(String name, double salary) throws DBException {
         if (updateStatementCache == null)
             prepareStatementForEmployeeData();
+        int updateCount = 0;
+        EmployeePayrollData eData = getEmployeePayrollData(name).get(0);
+
+        // update salary in employee table
         try {
+            connection.setAutoCommit(false);
             updateStatementCache.setDouble(1, salary);
             updateStatementCache.setString(2, name);
-            return updateStatementCache.executeUpdate();
+            updateCount = updateStatementCache.executeUpdate();
+            if (updateCount > 0)
+                connection.commit();
         } catch (SQLException e) {
-            throw new DBException("Failed to update: " + e.getMessage());
+            try {
+                connection.rollback();
+                connection.setAutoCommit(true);
+            } catch (SQLException e1) {
+                e1.printStackTrace();
+            }
+            throw new DBException("Failed to update employee: " + e.getMessage());
         }
+
+        // delete corresponding payroll data from payroll table
+        try (Statement statement = connection.createStatement()) {
+            String sql = String.format("delete from payroll where emp_id=%s", String.valueOf(eData.getId()));
+            updateCount = statement.executeUpdate(sql);
+            if (updateCount < 1) {
+                connection.rollback();
+                return 0;
+            }
+            connection.commit();
+
+        } catch (SQLException e) {
+            try {
+                connection.rollback();
+                connection.setAutoCommit(true);
+            } catch (SQLException e1) {
+                e1.printStackTrace();
+            }
+
+            throw new DBException("Failed to delete from payroll: " + e.getMessage());
+        }
+        // reenter payroll data in payroll table
+        try (Statement statement = connection.createStatement()) {
+            String sql = String.format("insert into payroll (emp_id,basic_pay) values ('%s','%s')",
+                    String.valueOf(eData.getId()), salary);
+            updateCount = statement.executeUpdate(sql);
+            if (updateCount < 1) {
+                connection.rollback();
+                return 0;
+            }
+            connection.commit();
+            connection.setAutoCommit(true);
+        } catch (SQLException e) {
+            try {
+                connection.rollback();
+                connection.setAutoCommit(true);
+            } catch (SQLException e1) {
+                e1.printStackTrace();
+            }
+            throw new DBException("Failed to add into payroll table: " + e.getMessage());
+        }
+
+        return updateCount;
     }
 
     public int updateEmployeeData(String name, double salary) throws DBException {
@@ -235,26 +306,24 @@ public class EmployeePayrollDBService {
     }
 
     public boolean addEmployeePayroll(EmployeePayrollData employeePayrollData) throws DBException {
-        if (addStatementCache == null)
+        if (connection == null)
             prepareStatementForEmployeeData();
         try {
             connection.setAutoCommit(false);
         } catch (SQLException e2) {
-            // TODO Auto-generated catch block
             e2.printStackTrace();
             return false;
         }
         int id = -1;
-        String name = employeePayrollData.getName();
         // add into employee table
         try {
+            String name = employeePayrollData.getName();
             addEmployee(employeePayrollData);
             id = getEmployeePayrollData(name).get(0).getId();
         } catch (DBException e) {
             try {
                 connection.rollback();
             } catch (SQLException e1) {
-                // TODO Auto-generated catch block
                 e1.printStackTrace();
             }
             throw new DBException("Failed to add into employee table: " + e.getMessage());
@@ -264,25 +333,20 @@ public class EmployeePayrollDBService {
             String sql = String.format("insert into payroll (emp_id,basic_pay) values ('%s','%s')", String.valueOf(id),
                     String.valueOf(employeePayrollData.getSalary()));
             int updateCount = statement.executeUpdate(sql);
-            if (updateCount < 1)
+            if (updateCount < 1) {
                 connection.rollback();
-
+                return false;
+            }
+            connection.commit();
+            connection.setAutoCommit(true);
         } catch (SQLException e) {
             try {
                 connection.rollback();
                 connection.setAutoCommit(true);
             } catch (SQLException e1) {
-                // TODO Auto-generated catch block
                 e1.printStackTrace();
             }
             throw new DBException("Failed to add into payroll table: " + e.getMessage());
-        }
-        try {
-            connection.commit();
-            connection.setAutoCommit(true);
-        } catch (SQLException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
         }
 
         return true;
